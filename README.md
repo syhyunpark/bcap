@@ -20,37 +20,23 @@ Extending the frequentist approach developed in Zhao and others (2021) under a p
 <!--- 
 ## Code Instructions
 
-- The code for the proposed methodology is included in **ICATemporalNetwork** folder. Please download all the files in the folder to implement the method.
-  + The main function for the method is **ICATemporalNet.R** and **ICATemporalNetBoot.R** which allows bootstraps.
-  + To use **ICATemporalNet.R**, it requires **estICA.R** which estimates the non-Gaussian signals and then removes them from raw data, and **temporalNet.R** which estimates the temporal network. 
+- The code for the proposed methodology is included in **xxx** folder. Please download all the files in the folder to implement the method.
+  + The main function for the method is **xxx.R**, and **xxx.stan** which is a Stan file.
+  + To use **xxx.R**, it requires **xxx.stan** which specfies the heteroscedasticity model (its prior, likelihood, and posterior sampling.  
 
 
  
 - **Examples** folder contains examples.
-   + **genData.R**: generate simulated data
-   + **example.R**: an example to implement the method
-   + **Sim_Scenario1.R**: simulations of Scenario 1
-   + **Sim_Scenario2.R**: simulations of Scenario 2
+   + **xxx.R**: generate simulated data
+   + **xxx.R**: an example to implement the method
+   + **xxx.R**: simulations of Scenario 
 
 ### Main function: ICATemporalNet
 #### Arguments
-+ `Yts`: input data, the user must supply a list of Yts, where each element is a N*K data matrix at time t. N is sample size, K is the number of nodes.
-+ `N`: sample size
-+ `Ntime`: total number of time points
-+ `ncomp`:  maximum number of independent components to be chosen
-+  `Ta`: use t<=Ta time points to estimate temporal network A
-+  `Tc`: ues t>Tc time points to estimate contemporaneous network Gamma
++ `xxx`:  xxx
 
 #### Value
-+ `estIC`: results from non-Gaussian estimation step. output from estICA.R
-+ `estRts`: R(t),residuals after removing non-Gaussian signals
-+ `estS`: independent components S
-+ `estUts`: non-Gaussian signals U(t)
-+ `estWt`: weight matrix w(t)
-+  `nIC`: number of independent components
-+  `A`: temporal network
-+  `Gamma`: contemporaneous network
-+  `Omega`: covariance matrix of e(t), inverse of Gamma
++ `xxx`: xxx
 
 ### The arguments of other functions are described within R files.
 -->
