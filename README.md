@@ -24,9 +24,7 @@ The proposed Bayesian approach for estimating Covariate Assisted Principal (CAP)
   + The main implementation functions are in **bcap_code.R**.
      + **bcap_model.stan** is a Stan file that specifies the model.
      + **SimSample.R** includes simulation examples demonstrating the implementation of the method.
-     + **Application.R** contains code for applying the method and conducting data analysis procedures on a Human Connectome Project (HCP) dataset.
-  +  HCP_PTN820 contains the PTN (Parcellation + Timeseries + Netmats) rs-fMRI dataset from HCP 820 subjects.
-
+     + **Application.R** contains code for applying the method and conducting data analysis procedures on a HCP (rs-fMRI PTN 820 subjects) dataset. 
 
 ### Main function: bcap_estimation
 #### Arguments
