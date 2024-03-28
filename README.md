@@ -21,31 +21,31 @@ The proposed Bayesian approach for estimating Covariate Assisted Principal (CAP)
 ## Code Instructions
 
 - The code for the proposed methodology is included in **bcap** folder. Please download the files in the folder to implement the method.
-  + The main implementation functions are in **bcap_code.R**.
+  + **bcap_code.R** contains the main implementation functions.
      + **bcap_model.stan** is a Stan file that specifies the model.
      + **SimSample.R** includes simulation examples demonstrating the implementation of the method.
-     + **Application.R** contains code for applying the method and conducting data analysis procedures on a HCP (rs-fMRI PTN 820 subjects) dataset. 
+     + **Application.R** contains code for applying the method and conducting data analysis procedures on a HCP dataset. 
 
 ### Main function: bcap_estimation
 #### Arguments
 + `data`:  a **list** object, containing the data needed for Stan. This data is used as input for the Bayesian estimation process
    + `p`: dimensionality of the signal  
-   + `q`: number of covariates (excluding intercept)
+   + `q`: number of covariates (excluding the intercept)
    + `n`: number of subjects 
-   + `N`: number of total data points (including within-subject data)
+   + `N`: number of total data points (including within-subject data points)
    + `id`: vector of subject id (length N vector)
    + `t_vec`: number of within-subject time points (length n vector, one number per subject)
-   + `X`: N x q design (covariate) matrix (excluding intercept)
+   + `X`: N x q matrix of covariates (excluding intercept)
    + `Y`: N x p response matrix 
    + `whitening_mat`: p x p matrix used to whiten the response signal (corresponding to $\bar{\Sigma}^{-\frac{1}{2}}$)
-   + `S`: n x p x p list of subject-specific p x p covariance estimates; this is only to compute the Deviation from Diagonality (DfD) criterion and not essential for running BCAP 
+   + `S`: n x p x p array of subject-specific p x p covariance estimates; this is only to compute the Deviation from Diagonality (DfD) criterion and not essential for running BCAP 
    + `Y.list`: length-n list of $T_i$ x p observed signals; this is for frequentist cap regression (for initialization of the chain); otherwise set it to NULL
    + `X.mat`: n x (q+1) matrix of covariates (including the intercept); this is for frequentist cap regression (for initialization of the chain); otherwise set it to NULL
    + `beta0_sd`: prior sd for intercept
    + `beta_sd`: prior sd for regression coefficent
    + `eta`:  LKJ hyperprior for correlations in the random effects in the linear predictor
 + `mod`:  a **stanmodel** object compiled from the **bcap_model.stan** file
-+ `d`: number of projection components (the rank of the dimension reduction matrix, Gamma)
++ `d`: number of projection components (the rank of the dimension reduction matrix, `Gamma`)
 + `iter_warmup`: default is 700
 + `iter_sampling`: default is 2000 (which gives 1300 post-warmup samples)
 + `chains`: default is 1; can set up multiple Markov chains by specifying a different value for this parameter
