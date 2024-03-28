@@ -114,3 +114,5 @@ generated quantities {
     DfD = mean(DfD_vec);   
   }
 }
+
+/// the end of the code 

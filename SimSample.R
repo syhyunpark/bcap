@@ -53,7 +53,9 @@ data =  list(p  = dat.obj$p,  ## number of regions
              eta = 1)  ## LKJ hyperprior for correlations in random effects
 
 
-## estimate the bayesian cap model 
+#################################################
+## Estimation of the Bayesian cap (bcap) model ##
+#################################################
 res = bcap_estimation(data=data, mod=mod,  ## mod is the compiled "stanmodel" from 'bcap_code.R'. 
                       d=2, ## number of projection components 
                       iter_warmup = 200, ## iter_warmup  = 700
@@ -62,14 +64,81 @@ res = bcap_estimation(data=data, mod=mod,  ## mod is the compiled "stanmodel" fr
 
 res$Gamma.hat  ## posterior mean of p x d projection matrix 
 res$beta.hat   ## posterior mean ofd x q regression coefficient matrix 
+#dat.obj$B     ## this is the "true" value used to generate the data
 #res$CrI_beta  ## credible interval of the regression coefficients 
 res$Omega.hat  ## posterior mean of the random effect d x d covariace matrix 
 res$beta0_org.hat  ## posterior mean of the linear predictor's interecept vector 
 ls(res)
 res$waic  ## the waic value 
 
-res$cap.obj ## Zhao et al (2021) cap regression object 
+
+
+##############################################
+######## log covariance contrast plot ########
+##############################################
+
+### write a contrast vector (the same length as a covariate vector including the intercept)
+K1 = matrix(c(0, 1, 0, 0, 0), 1)  
+contrast = compute_contrast(res, contr.vec = K1)     
+ 
+### a) significance matrix 
+library(reshape2)
+library(ggplot2)
+sigmap = matrix(NA, nrow=p,ncol=p)
+CrI_offdiag = t(apply(contrast$log.cov.offdiag, 2, 
+                      function(x) quantile(x, probs =c(0.025,0.5,0.975))))
+CrI_diag = t(apply(contrast$log.cov.diag, 2, 
+                   function(x) quantile(x, probs =c(0.025,0.5,0.975))))
+diag_indices = cbind(1:nrow(sigmap), 1:ncol(sigmap))
+sigmap = matrix(NA, nrow=p,ncol=p)
+sigmap[lower.tri(sigmap)] = as.numeric((sign(CrI_offdiag[,1])*sign(CrI_offdiag[,3])>0)&(abs(CrI_offdiag[,2])>0))  
+sigmap[diag_indices] = as.numeric((sign(CrI_diag[,1])*sign(CrI_diag[,3])>0)&(abs(CrI_diag[,2])>0))
+var.names = paste0("N",1:p) 
+dimnames(sigmap) = list(var.names,var.names) 
+
+## Melt the correlation matrix 
+melted_cormat = melt(sigmap, na.rm = TRUE)
+## Heatmap 
+plot.sigmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",  
+                       space = "Lab",  
+                       name=" ") + xlab(" ") + ylab(" ") + theme(
+                         legend.text = element_text(color = "white"),
+                         legend.title = element_text(color = "white"),
+                         legend.key = element_rect(fill = "white")) + 
+  guides(fill = guide_legend(override.aes= list(alpha = 0, color = "white"))) +
+  theme(legend.key=element_rect(colour="white")) 
+plot.sigmap 
+
+### b) posterior mean matrix 
+mean.matrix = apply(contrast$log.cov, c(2,3), mean)  
+dimnames(mean.matrix) = list(var.names,var.names) 
+# Get lower triangle of the correlation matrix
+get_lower_tri=function(cormat){
+  cormat[upper.tri(cormat)] = NA
+  return(cormat)
+}
+lower_tri = get_lower_tri(mean.matrix)
+
+# Melt the correlation matrix 
+melted_cormat = melt(lower_tri, na.rm = TRUE)
+# Heatmap 
+plot.mean = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()+
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       space = "Lab", 
+                       name=" ") + xlab(" ") + ylab(" ")
+plot.mean 
+
+
+###############################################
+### Zhao et al (2021) cap regression object ###
+###############################################
+res$cap.obj  
 res$cap.obj$gamma
+res$cap.obj$beta
+
 
 
 
@@ -77,11 +146,10 @@ res$cap.obj$gamma
 #####################################
 #####  Simulation illustration ######
 #####################################
-
-scenarios =  expand.grid(n= c(100, 200, 300, 400),
-                         nt= c(10, 20, 30),
-                         p= c(10, 20),
-                         misspecified=c(0,1))  # misspecified =1 means that there are no common covariate-relevant eigenvectors
+scenarios =  expand.grid(n= c(100, 200, 300, 400),  ## number of subjects 
+                         nt= c(10, 20, 30),         ## number of within-subject time points 
+                         p= c(10, 20),              ## dimensionality of signals 
+                         misspecified=c(0,1))       ## misspecified =1 means that there are no common covariate-relevant eigenvectors
 scenarios
 results.aggregated  = vector("list", length= nrow(scenarios))
 
@@ -120,6 +188,9 @@ round(apply(res, 1, sd),3)
 #}
 
 
-######################################
-########     End of code      ########
-######################################
+
+
+
+#############################################
+########    The end of the code      ########
+#############################################

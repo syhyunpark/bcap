@@ -2,7 +2,9 @@
 options(mc.cores = parallel::detectCores()) 
 library(rstan) 
 library(MASS)
+library(stringr)
 library(loo) 
+library(cap)  ## in case one wants to initialize the regression with Zhao et al.'s cap
 
 
 mod = mod_bcap = rstan::stan_model("bcap_model.stan")  # compile the stan file  
@@ -145,7 +147,7 @@ bcap_estimation = function(data,
   lp_tmp = array(NA, dim = c(nsample, n, d))
   for (i in 1:n) {
     for (s in 1:nsample) {
-      lp_tmp[s,i,] = cbind(draws_beta0_org_tmp[s,], draws_beta_tmp[s,,]) %*% data$X.mat[i,] + draws_z_tmp[s,,i]
+      lp_tmp[s,i,] = cbind(draws_beta0_org_tmp[s,], matrix(draws_beta_tmp[s,,], nrow=d)) %*% data$X.mat[i,] + draws_z_tmp[s,,i]
     }
   }
   
@@ -165,11 +167,10 @@ bcap_estimation = function(data,
     draws_beta0[,k] = draws_beta0_tmp[,ind[k]]
     draws_Omega_sd[,k] = draws_Omega_sd_tmp[,ind[k]] 
     draws_z[,k,] = draws_z_tmp[,ind[k],]
-    for(k2 in k:d) {
-      draws_Omega[,k,k2] = draws_Omega_tmp[,ind[k],ind[k2]]
-      draws_Omega_cor[,k,k2] = draws_Omega_cor_tmp[,ind[k],ind[k2]]
-    }
   }
+  draws_Omega[,1:d,1:d] = draws_Omega_tmp[,ind,ind]
+  draws_Omega_cor[,1:d,1:d] = draws_Omega_cor_tmp[,ind,ind] 
+  
   
   ### posterior mean
   Gamma.hat = apply(draws_Gamma, c(2,3), mean) 
@@ -232,8 +233,9 @@ bcap_estimation = function(data,
 }
 
 
-
-### data generation function used in the simulation examples in the paper
+##############################################################################
+### data generation function used in the simulation examples in the paper  ###
+##############################################################################
 data.gen =  function(n=100, ## number of subjects 
                      nt=10, ## number of time points 
                      d=2,   ## number of signal components
@@ -333,7 +335,9 @@ data.gen =  function(n=100, ## number of subjects
 }
 
 
-
+################################################################
+###  a function for running simulation examples in the paper ###
+################################################################
 one_Experiment =  function(iter, 
                            d=2,   ## number of components 
                            n=100, ## number of subjects 
@@ -350,9 +354,9 @@ one_Experiment =  function(iter,
                            iter_sampling= 2000,
                            lp_re=TRUE,
                            mod = mod_bcap, ## mod_bcap is a "stan" object   
-                           beta0_sd=2.5,
-                           beta_sd=2.5,
-                           eta=1)
+                           beta0_sd=2.5,   ## prior sd for intercept 
+                           beta_sd=2.5,    ## prior sd for regression coefficent
+                           eta=1)          ## LKJ hyperprior for correlations in random effects
 {
   
   set.seed(iter) 
@@ -485,5 +489,39 @@ one_Experiment =  function(iter,
     mean_accept = res$mean_accept,
     div = res$div, 
     tree_hit = res$tree_hit))
+}
+
+
+
+### a function that constructs the log covariacne covariance given 
+### res: an estimated bcap object (from bcap_estimation)
+### contr.vec: a length-q contrast vector (the same length as the covariate vector)
+compute_contrast = function(res, contr.vec)
+{
+  n = res$n  # number of units (subjects) 
+  nsample = res$nsample  # number of HMC samples
+  d = res$d
+  p = res$p
+  contr.vec =as.vector(contr.vec)
+  lp = array(NA, dim = c(nsample, d))
+  for(s in 1:nsample){
+    lp[s,] = cbind(res$draws_beta0_org[s,],res$draws_beta[s,,])%*%contr.vec
+  }
+  
+  log.cov = array(NA, dim = c(nsample, p, p))  
+  for(s in 1:nsample){ 
+    log.cov[s,,] = res$draws_Gamma[s,,] %*% diag(lp[s,]) %*% t(res$draws_Gamma[s,,])
+  }
+  
+  log.cov.offdiag =  array(dim=c(nsample,p*(p-1)/2)) 
+  log.cov.diag = array(dim=c(nsample,p)) 
+  for(s in 1:nsample){
+    log.cov.offdiag[s,] = log.cov[s,,][lower.tri(log.cov[s,,])]
+    log.cov.diag[s,] = diag(log.cov[s,,]) 
+  }
+  
+  return(list(log.cov=log.cov,
+              log.cov.offdiag=log.cov.offdiag,
+              log.cov.diag=log.cov.diag))
 }
 
